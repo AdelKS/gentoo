@@ -165,8 +165,16 @@ if [[ ${ECM_KCM_TARGETS} ]]; then
 	KF6_BDEPEND+=( "kde-frameworks/kcmutils:6" )
 fi
 
+KF6_BDEPEND+=( "dev-qt/qtbase:6" )
+
 if $(ver_test ${KFMIN} -lt 5.240) && [[ ${KF6_BDEPEND} && ${KF5_BDEPEND} ]]; then
-	BDEPEND+=" || ( ( ${KF6_BDEPEND[*]} ) ( ${KF5_BDEPEND[*]} ) )"
+	BDEPEND+=" || (
+		( ${KF6_BDEPEND[*]} )
+		(
+			${KF5_BDEPEND[*]}
+			dev-qt/qtcore:5
+		)
+	)"
 else
 	BDEPEND+=" ${KF6_BDEPEND[*]}"
 fi
@@ -392,7 +400,11 @@ ecm-common_src_prepare() {
 # Passes -DQT_MAJOR_VERSION=${_KFSLOT} only.
 ecm-common_src_configure() {
 	# necessary for at least KF6KCMUtils
-	local mycmakeargs=( -DQT_MAJOR_VERSION=${_KFSLOT} )
+	local cmakeargs=( -DQT_MAJOR_VERSION=${_KFSLOT} )
+
+	# allow the ebuild to override what we set here
+	mycmakeargs=("${cmakeargs[@]}" "${mycmakeargs[@]}")
+
 	cmake_src_configure
 }
 

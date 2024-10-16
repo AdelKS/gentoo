@@ -2,7 +2,8 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-inherit dist-kernel-utils linux-info mount-boot savedconfig
+PYTHON_COMPAT=( python3_{10..13} )
+inherit dist-kernel-utils linux-info mount-boot python-any-r1 savedconfig
 
 # In case this is a real snapshot, fill in commit below.
 # For normal, tagged releases, leave blank
@@ -40,7 +41,8 @@ RESTRICT="binchecks strip test
 BDEPEND="initramfs? ( app-alternatives/cpio )
 	compress-xz? ( app-arch/xz-utils )
 	compress-zstd? ( app-arch/zstd )
-	deduplicate? ( app-misc/rdfind )"
+	deduplicate? ( app-misc/rdfind )
+	${PYTHON_DEPS}"
 
 #add anything else that collides to this
 RDEPEND="!savedconfig? (
@@ -84,6 +86,9 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+
+	python_setup
+
 	if use compress-xz || use compress-zstd ; then
 		local CONFIG_CHECK
 
@@ -119,7 +124,10 @@ src_prepare() {
 		| xargs --null --no-run-if-empty chmod 0644 \
 		|| die
 
-	chmod +x copy-firmware.sh || die
+	chmod +x "${S}"/{copy-firmware.sh,dedup-firmware.sh,check_whence.py,build_packages.py} || die
+	chmod +x "${S}"/{carl9170fw/autogen.sh,carl9170fw/genapi.sh} || die
+	chmod +x "${S}"/contrib/process_linux_firmware.py || die
+
 	cp "${FILESDIR}/${PN}-make-amd-ucode-img.bash" "${T}/make-amd-ucode-img" || die
 	chmod +x "${T}/make-amd-ucode-img" || die
 
@@ -136,6 +144,8 @@ src_prepare() {
 	# whitelist of misc files
 	local misc_files=(
 		copy-firmware.sh
+		dedup-firmware.sh
+		check_whence.py
 		WHENCE
 		README
 	)
@@ -205,6 +215,40 @@ src_prepare() {
 		mellanox/mlxsw_spectrum-13.2000.1122.mfa2
 	)
 
+	if use !redistributable; then
+		# remove files _not_ in the free_software or unknown_license lists
+		# everything else is confirmed (or assumed) to be redistributable
+		# based on upstream acceptance policy
+		einfo "Removing non-redistributable files ..."
+		local OLDIFS="${IFS}"
+		local IFS=$'\n'
+		set -o pipefail
+		find ! -type d -printf "%P\n" \
+			| grep -Fvx -e "${misc_files[*]}" -e "${free_software[*]}" -e "${unknown_license[*]}" \
+			| xargs -d '\n' --no-run-if-empty rm -v
+
+		[[ ${?} -ne 0 ]] && die "Failed to remove non-redistributable files"
+
+		IFS="${OLDIFS}"
+	fi
+
+	restore_config ${PN}.conf
+}
+
+src_install() {
+
+	local FW_OPTIONS=( "-v" )
+	git config --global --add safe.directory "${S}" || die
+
+	if use compress-xz; then
+		FW_OPTIONS+=( "--xz" )
+	elif use compress-zstd; then
+		FW_OPTIONS+=( "--zstd" )
+	fi
+	FW_OPTIONS+=( "${ED}/lib/firmware" )
+	./copy-firmware.sh "${FW_OPTIONS[@]}" || die
+	use deduplicate && { ./dedup-firmware.sh "${ED}/lib/firmware" || die; }
+
 	# blacklist of images with unknown license
 	local unknown_license=(
 		korg/k1212.dsp
@@ -254,40 +298,6 @@ src_prepare() {
 		einfo "Removing files with unknown license ..."
 		rm -v "${unknown_license[@]}" || die
 	fi
-
-	if use !redistributable; then
-		# remove files _not_ in the free_software or unknown_license lists
-		# everything else is confirmed (or assumed) to be redistributable
-		# based on upstream acceptance policy
-		einfo "Removing non-redistributable files ..."
-		local OLDIFS="${IFS}"
-		local IFS=$'\n'
-		set -o pipefail
-		find ! -type d -printf "%P\n" \
-			| grep -Fvx -e "${misc_files[*]}" -e "${free_software[*]}" -e "${unknown_license[*]}" \
-			| xargs -d '\n' --no-run-if-empty rm -v
-
-		[[ ${?} -ne 0 ]] && die "Failed to remove non-redistributable files"
-
-		IFS="${OLDIFS}"
-	fi
-
-	restore_config ${PN}.conf
-}
-
-src_install() {
-
-	local FW_OPTIONS=( "-v" )
-
-	if use compress-xz; then
-		FW_OPTIONS+=( "--xz" )
-	elif use compress-zstd; then
-		FW_OPTIONS+=( "--zstd" )
-	fi
-	! use deduplicate && FW_OPTIONS+=( "--ignore-duplicates" )
-	FW_OPTIONS+=( "${ED}/lib/firmware" )
-	./copy-firmware.sh "${FW_OPTIONS[@]}" || die
-
 	pushd "${ED}/lib/firmware" &>/dev/null || die
 
 	# especially use !redistributable will cause some broken symlinks
@@ -369,6 +379,7 @@ pkg_preinst() {
 
 	# Make sure /boot is available if needed.
 	use initramfs && ! use dist-kernel && mount-boot_pkg_preinst
+
 }
 
 pkg_postinst() {
@@ -394,6 +405,8 @@ pkg_postinst() {
 			mount-boot_pkg_postinst
 		fi
 	fi
+
+
 }
 
 pkg_prerm() {
