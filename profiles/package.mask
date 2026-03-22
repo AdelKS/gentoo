@@ -37,6 +37,14 @@
 #--- END OF EXAMPLES ---
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2026-05-15)
+# USE=gui in this version depends on Qt5 and can no longer be supported.
+# VLC-4 snapshots are provided with a Qt6-based USE=gui.
+# Alternatives for stable users are media-video/mpv, media-video/haruna,
+# media-video/smplayer, media-video/qmplay2 and probably many more.
+# Bug #954006. Removal some time after 2026-05-30.
+=media-video/vlc-3.0.23
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2026-05-15)
 # Depends on Qt5 and does not appear to be ported to Qt6 upstream soon.
 # With net-irc/quassel-0.14.50_pre20260513, we provide an ~arch keyworded
 # snapshot, cut from the so far most promising PR pending upstream.
