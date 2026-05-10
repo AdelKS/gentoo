@@ -37,6 +37,11 @@
 #--- END OF EXAMPLES ---
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2026-05-15)
+# Obsolete 3rd party Qt5 integration package.
+# Removal on 2026-06-14.
+x11-misc/qt5ct
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2026-05-15)
 # USE=gui in this version depends on Qt5 and can no longer be supported.
 # VLC-4 snapshots are provided with a Qt6-based USE=gui.
 # Alternatives for stable users are media-video/mpv, media-video/haruna,
