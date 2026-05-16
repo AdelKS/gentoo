@@ -73,7 +73,7 @@ src_configure() {
 
 	if use systemd; then
 		sed -i -e '/^SYSTEMD/s/n/y/' "${S}/build.conf" \
-			|| die "Failed to enable SystemD"
+			|| die "Failed to enable systemd"
 	fi
 
 	echo "DISTRO = gentoo" >> "${S}/build.conf" || die
