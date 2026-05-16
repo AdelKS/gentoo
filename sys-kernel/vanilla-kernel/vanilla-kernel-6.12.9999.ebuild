@@ -28,7 +28,6 @@ EGIT_REPO_URI=(
 )
 EGIT_BRANCH="linux-${PV/.9999/.y}"
 
-LICENSE="GPL-2"
 IUSE="debug hardened"
 REQUIRED_USE="
 	arm? ( savedconfig )
