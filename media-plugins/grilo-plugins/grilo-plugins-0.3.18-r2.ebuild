@@ -76,7 +76,9 @@ src_prepare() {
 	default
 	xdg_environment_reset
 
-	sed -i -e "s:'GETTEXT_PACKAGE', meson.project_name():'GETTEXT_PACKAGE', 'grilo-plugins-${SLOT%/*}':" meson.build || die
+	sed -i -e \
+		"s:'GETTEXT_PACKAGE', meson.project_name():'GETTEXT_PACKAGE', 'grilo-plugins-${SLOT%/*}':" \
+		meson.build || die
 	sed -i -e "s:meson.project_name():'grilo-plugins-${SLOT%/*}':" po/meson.build || die
 	sed -i -e "s:meson.project_name():'grilo-plugins-${SLOT%/*}':" help/meson.build || die
 }
