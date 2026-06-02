@@ -1,0 +1,43 @@
+# glaze tries to fetch online its own version of boost-ext ut from
+# https://github.com/openalgz/ut that we bundle directly into the project
+# during emerge
+
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 52ac6204..0f6b18dc 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -1,16 +1,8 @@
+ include(FetchContent)
+
+-FetchContent_Declare(
+-  ut
+-  GIT_REPOSITORY https://github.com/openalgz/ut
+-  GIT_TAG v1.1.0
+-  GIT_SHALLOW TRUE
+-)
+-
+ message(STATUS "Fetching dependencies...")
+ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+ set(CMAKE_SKIP_INSTALL_RULES ON CACHE BOOL "" FORCE)
+-FetchContent_MakeAvailable(ut)
+ set(CMAKE_SKIP_INSTALL_RULES OFF CACHE BOOL "" FORCE)
+ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL FALSE)
+ message(STATUS "...finished fetching dependencies.")
+@@ -83,7 +75,7 @@ option(glaze_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSan
+
+ add_library(glz_test_common INTERFACE)
+ target_compile_features(glz_test_common INTERFACE cxx_std_23)
+-target_link_libraries(glz_test_common INTERFACE ut::ut glaze::glaze glz_asio)
++target_link_libraries(glz_test_common INTERFACE glaze::glaze glz_asio)
+
+ if(MSVC)
+     target_compile_options(glz_test_common INTERFACE /GR- /bigobj)
+@@ -107,7 +99,7 @@ endif()
+
+ add_library(glz_test_exceptions INTERFACE)
+ target_compile_features(glz_test_exceptions INTERFACE cxx_std_23)
+-target_link_libraries(glz_test_exceptions INTERFACE ut::ut glaze::glaze glz_asio)
++target_link_libraries(glz_test_exceptions INTERFACE glaze::glaze glz_asio)
+ if(MSVC)
+     target_compile_options(glz_test_exceptions INTERFACE /GR- /bigobj)
+     target_compile_options(glz_test_exceptions INTERFACE /W4 /wd4459 /wd4805)
